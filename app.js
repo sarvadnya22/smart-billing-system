@@ -6,6 +6,14 @@ const app = {
 
     // Initialize application (Asynchronous)
     init: async () => {
+        // 0. Load Theme setting
+        const theme = localStorage.getItem('smart_billing_theme') || 'dark';
+        if (theme === 'light') {
+            document.body.classList.add('light-theme');
+            const toggleIcon = document.querySelector('#theme-toggle-btn i');
+            if (toggleIcon) toggleIcon.className = 'fa-solid fa-sun';
+        }
+
         // 1. Check connection status with SQL Server
         await db.checkConnection();
         app.updateConnectionBadge();
@@ -126,6 +134,29 @@ const app = {
         document.getElementById('header-logout-btn').addEventListener('click', () => {
             app.logout();
         });
+
+        // Theme toggle button click handler
+        const themeBtn = document.getElementById('theme-toggle-btn');
+        if (themeBtn) {
+            themeBtn.addEventListener('click', () => {
+                const isLight = document.body.classList.toggle('light-theme');
+                const themeName = isLight ? 'light' : 'dark';
+                localStorage.setItem('smart_billing_theme', themeName);
+                
+                // Update toggle button icon
+                const icon = themeBtn.querySelector('i');
+                if (icon) {
+                    icon.className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+                }
+                
+                // Redraw dashboard charts to match light/dark ticks & grid lines!
+                if (window.dashboard && app.currentTab === 'dashboard') {
+                    dashboard.renderCharts();
+                }
+                
+                app.showToast(`Switched to ${themeName} theme!`, "success");
+            });
+        }
     },
 
     // Switch between page views

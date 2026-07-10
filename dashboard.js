@@ -141,9 +141,10 @@ const dashboard = {
         const categoryLabels = Object.keys(categories);
         const categoryCounts = Object.values(categories);
 
-        // Chart Styling Options for Glassmorphic dark theme
-        const gridColor = 'rgba(255, 255, 255, 0.05)';
-        const textColor = '#94a3b8';
+        // Chart Styling Options based on active theme
+        const isLight = document.body.classList.contains('light-theme');
+        const gridColor = isLight ? 'rgba(15, 23, 42, 0.06)' : 'rgba(255, 255, 255, 0.05)';
+        const textColor = isLight ? '#475569' : '#94a3b8';
 
         // Render Sales Trends Bar Chart
         const salesCtx = document.getElementById('salesTrendsChart').getContext('2d');
