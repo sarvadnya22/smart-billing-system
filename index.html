@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Billing System</title>
     <!-- CSS styles -->
-    <link rel="stylesheet" href="style.css?v=1.0.1">
+    <link rel="stylesheet" href="style.css?v=1.0.2">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js for graphs -->
@@ -15,34 +15,7 @@
 </head>
 <body>
 
-    <!-- Authentication Screen (Emergency Bypass Enabled) -->
-    <div id="auth-screen" class="auth-wrapper">
-        <div class="auth-card">
-            <div class="auth-icon">
-                <i class="fa-solid fa-lock"></i>
-            </div>
-            <div class="auth-header">
-                <h2 id="auth-store-title">Smart Billing System</h2>
-                <p>Please enter store access passcode</p>
-            </div>
-            <div class="auth-form">
-                <div class="form-group">
-                    <label for="auth-passcode">Passcode</label>
-                    <input type="password" id="auth-passcode" placeholder="••••" maxlength="8">
-                </div>
-                <button type="button" id="auth-login-btn" class="checkout-btn" style="padding: 12px; margin-top: 10px;">
-                    <i class="fa-solid fa-key"></i> Unlock System
-                </button>
-                <!-- Emergency Bypass Trigger to prevent password issues -->
-                <button type="button" id="auth-bypass-btn" class="auth-bypass-btn">
-                    <i class="fa-solid fa-shield-halved"></i> Bypass Security (Guest Access)
-                </button>
-                <div class="auth-credential-tip">
-                    <strong>Tip:</strong> Default passcode is <code>1234</code>. You can change or disable this passcode in Settings anytime.
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- App Main Layout -->
     <div class="app-container">
@@ -451,7 +424,7 @@
 
             <!-- TAB 6: SETTINGS -->
             <section id="settings-tab" class="tab-content">
-                <div class="charts-grid" style="grid-template-columns: 1fr 1fr;">
+                <div style="max-width: 600px; margin: 0 auto; width: 100%;">
                     
                     <!-- Store Profile Settings -->
                     <div class="card">
@@ -491,57 +464,6 @@
                                 <i class="fa-solid fa-floppy-disk"></i> Save Store Settings
                             </button>
                         </form>
-                    </div>
-
-                    <!-- Security & Database Settings -->
-                    <div style="display: flex; flex-direction: column; gap: 20px;">
-                        
-                        <!-- Passcode Security -->
-                        <div class="card">
-                            <div class="card-title">
-                                <h3><i class="fa-solid fa-shield-halved"></i> Passcode Protection</h3>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 14px;">
-                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                                    <input type="checkbox" id="set-auth-enabled" style="width: 20px; height: 20px; cursor: pointer;">
-                                    <label for="set-auth-enabled" style="font-weight: 500; cursor: pointer;">Require Passcode on Startup</label>
-                                </div>
-                                <div class="form-group" id="set-passcode-group" style="display: none;">
-                                    <label for="set-store-passcode">Store Passcode</label>
-                                    <input type="password" id="set-store-passcode" placeholder="Enter new passcode" maxlength="8">
-                                </div>
-                                <button type="button" id="save-security-btn" class="checkout-btn" style="padding: 12px; background: var(--accent-primary);">
-                                    <i class="fa-solid fa-lock-open"></i> Save Security settings
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Data Backup Operations -->
-                        <div class="card">
-                            <div class="card-title">
-                                <h3><i class="fa-solid fa-database"></i> Database Management</h3>
-                            </div>
-                            <div style="display: flex; flex-direction: column; gap: 14px;">
-                                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
-                                    Since everything is stored locally on your browser, you should back up your database files regularly.
-                                </p>
-                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                    <button type="button" id="db-export-btn" class="header-btn" style="flex-grow: 1;">
-                                        <i class="fa-solid fa-file-export" style="color: var(--accent-primary);"></i> Export JSON Backup
-                                    </button>
-                                    <button type="button" id="db-trigger-import-btn" class="header-btn" style="flex-grow: 1;">
-                                        <i class="fa-solid fa-file-import" style="color: var(--accent-warning);"></i> Import Backup File
-                                    </button>
-                                    <input type="file" id="db-import-file" style="display: none;" accept=".json">
-                                </div>
-                                
-                                <div style="margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--border-color);">
-                                    <button type="button" id="db-reset-btn" class="checkout-btn" style="background: var(--accent-danger); width: 100%; font-size: 14px; padding: 12px;">
-                                        <i class="fa-solid fa-trash-arrow-up"></i> Reset Database (Seed Default Data)
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </section>
@@ -694,13 +616,13 @@
     </div>
 
     <!-- Javascript Logic Modules -->
-    <script src="db.js?v=1.0.1"></script>
-    <script src="app.js?v=1.0.1"></script>
-    <script src="dashboard.js?v=1.0.1"></script>
-    <script src="billing.js?v=1.0.1"></script>
-    <script src="inventory.js?v=1.0.1"></script>
-    <script src="customers.js?v=1.0.1"></script>
-    <script src="invoices.js?v=1.0.1"></script>
-    <script src="settings.js?v=1.0.1"></script>
+    <script src="db.js?v=1.0.2"></script>
+    <script src="app.js?v=1.0.2"></script>
+    <script src="dashboard.js?v=1.0.2"></script>
+    <script src="billing.js?v=1.0.2"></script>
+    <script src="inventory.js?v=1.0.2"></script>
+    <script src="customers.js?v=1.0.2"></script>
+    <script src="invoices.js?v=1.0.2"></script>
+    <script src="settings.js?v=1.0.2"></script>
 </body>
 </html>

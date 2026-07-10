@@ -1,8 +1,7 @@
-// app.js - Core Application Router, State Manager and Auth Bypass
+// app.js - Core Application Router and State Manager
 
 const app = {
     currentTab: 'dashboard',
-    isAuthenticated: false,
 
     // Initialize application (Asynchronous)
     init: async () => {
@@ -18,63 +17,11 @@ const app = {
         await db.checkConnection();
         
         // 2. Load configurations and events
-        await app.checkAuthRequirement();
         app.setupEventListeners();
         await app.updateProfileDisplay();
         
         // 3. Initial tab load
         await app.switchTab(app.currentTab);
-    },
-
-    // Handle Authentication Check
-    checkAuthRequirement: async () => {
-        const settings = await db.getSettings();
-        const authScreen = document.getElementById('auth-screen');
-        const logoutBtn = document.getElementById('header-logout-btn');
-        
-        // Update auth title
-        document.getElementById('auth-store-title').textContent = settings.storeName;
-
-        if (settings.authEnabled && !app.isAuthenticated) {
-            authScreen.style.display = 'flex';
-            logoutBtn.style.display = 'none';
-        } else {
-            authScreen.style.display = 'none';
-            if (settings.authEnabled) {
-                logoutBtn.style.display = 'flex';
-            } else {
-                logoutBtn.style.display = 'none';
-            }
-        }
-    },
-
-
-    // Attempt Login
-    login: async (passcode) => {
-        const settings = await db.getSettings();
-        if (passcode === settings.passcode) {
-            app.isAuthenticated = true;
-            app.showToast("System unlocked successfully!", "success");
-            await app.checkAuthRequirement();
-            await app.switchTab('dashboard');
-        } else {
-            app.showToast("Incorrect passcode! Try again.", "error");
-        }
-    },
-
-    // Bypass Authentication (Emergency Guest Access)
-    bypassAuth: async () => {
-        app.isAuthenticated = true;
-        app.showToast("Access granted via Bypass mode", "warning");
-        await app.checkAuthRequirement();
-        await app.switchTab('dashboard');
-    },
-
-    // Log out / Lock screen
-    logout: async () => {
-        app.isAuthenticated = false;
-        app.showToast("System locked", "warning");
-        await app.checkAuthRequirement();
     },
 
     // Setup global navigation and action listeners
@@ -89,36 +36,12 @@ const app = {
             });
         });
 
-        // Login inputs
-        document.getElementById('auth-login-btn').addEventListener('click', () => {
-            const passcode = document.getElementById('auth-passcode').value;
-            app.login(passcode);
-            document.getElementById('auth-passcode').value = '';
-        });
-
-        document.getElementById('auth-passcode').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const passcode = e.target.value;
-                app.login(passcode);
-                e.target.value = '';
-            }
-        });
-
-        // Security bypass trigger
-        document.getElementById('auth-bypass-btn').addEventListener('click', () => {
-            app.bypassAuth();
-        });
-
         // Header buttons
         document.getElementById('header-new-sale-btn').addEventListener('click', () => {
             app.switchTab('billing');
             if (window.billing) {
                 billing.clearCart();
             }
-        });
-
-        document.getElementById('header-logout-btn').addEventListener('click', () => {
-            app.logout();
         });
 
         // Theme toggle button click handler
@@ -147,13 +70,6 @@ const app = {
 
     // Switch between page views
     switchTab: async (tabId) => {
-        // Verify login check
-        const settings = await db.getSettings();
-        if (settings.authEnabled && !app.isAuthenticated) {
-            await app.checkAuthRequirement();
-            return;
-        }
-
         app.currentTab = tabId;
 
         // Hide all tabs
@@ -183,7 +99,7 @@ const app = {
             inventory: { title: "Inventory Database", subtitle: "Manage stock quantities, categories, and unit price details." },
             customers: { title: "Customer Ledger CRM", subtitle: "Track phone contacts, email lists, and profiles." },
             invoices: { title: "Invoices & Receipts Ledger", subtitle: "Audit historical invoices, print copies, and filter date records." },
-            settings: { title: "System Configuration", subtitle: "Customize receipt layouts, set code locks, and backup local database." }
+            settings: { title: "System Configuration", subtitle: "Customize receipt layouts, and set header tags." }
         };
 
         if (titles[tabId]) {
