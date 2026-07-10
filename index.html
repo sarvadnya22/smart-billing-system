@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Billing System</title>
+    <!-- CSS styles -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2pdf.js for downloading PDF invoices -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+    <!-- Authentication Screen (Emergency Bypass Enabled) -->
+    <div id="auth-screen" class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-icon">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div class="auth-header">
+                <h2 id="auth-store-title">Smart Billing System</h2>
+                <p>Please enter store access passcode</p>
+            </div>
+            <div class="auth-form">
+                <div class="form-group">
+                    <label for="auth-passcode">Passcode</label>
+                    <input type="password" id="auth-passcode" placeholder="••••" maxlength="8">
+                </div>
+                <button type="button" id="auth-login-btn" class="checkout-btn" style="padding: 12px; margin-top: 10px;">
+                    <i class="fa-solid fa-key"></i> Unlock System
+                </button>
+                <!-- Emergency Bypass Trigger to prevent password issues -->
+                <button type="button" id="auth-bypass-btn" class="auth-bypass-btn">
+                    <i class="fa-solid fa-shield-halved"></i> Bypass Security (Guest Access)
+                </button>
+                <div class="auth-credential-tip">
+                    <strong>Tip:</strong> Default passcode is <code>1234</code>. You can change or disable this passcode in Settings anytime.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Main Layout -->
+    <div class="app-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <i class="fa-solid fa-receipt"></i>
+                <span>SmartBill</span>
+            </div>
+            
+            <ul class="nav-links">
+                <li class="nav-item active" data-tab="dashboard">
+                    <a href="#dashboard">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="billing">
+                    <a href="#billing">
+                        <i class="fa-solid fa-cash-register"></i>
+                        <span>Billing POS</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="inventory">
+                    <a href="#inventory">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        <span>Products</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="customers">
+                    <a href="#customers">
+                        <i class="fa-solid fa-user-group"></i>
+                        <span>Customers</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="invoices">
+                    <a href="#invoices">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        <span>Invoices</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-tab="settings">
+                    <a href="#settings">
+                        <i class="fa-solid fa-gears"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-badge">
+                    <div class="avatar">AD</div>
+                    <div class="profile-info">
+                        <h4>Admin</h4>
+                        <p id="profile-store-name">Smart Store</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Body Wrapper -->
+        <main class="main-content">
+            
+            <!-- Page Header -->
+            <header class="top-header">
+                <div class="page-title">
+                    <h1 id="view-title">Dashboard</h1>
+                    <p id="view-subtitle">Welcome back! Here's an overview of today's activities.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="header-btn" id="header-new-sale-btn">
+                        <i class="fa-solid fa-cart-plus"></i> New Sale
+                    </button>
+                    <button class="header-btn" id="header-logout-btn" style="display: none;">
+                        <i class="fa-solid fa-right-from-bracket"></i> Lock
+                    </button>
+                </div>
+            </header>
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="dashboard-tab" class="tab-content active">
+                <div class="dashboard-kpis">
+                    <div class="kpi-card success">
+                        <div class="kpi-details">
+                            <span>Today's Sales</span>
+                            <h2 id="kpi-revenue">₹0.00</h2>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fa-solid fa-indian-rupee-sign"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-details">
+                            <span>Bills Generated</span>
+                            <h2 id="kpi-invoices">0</h2>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fa-solid fa-file-invoice"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-card danger">
+                        <div class="kpi-details">
+                            <span>Low Stock Alerts</span>
+                            <h2 id="kpi-lowstock">0</h2>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-card warning">
+                        <div class="kpi-details">
+                            <span>Total Customers</span>
+                            <h2 id="kpi-customers">0</h2>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="card">
+                        <div class="card-title">
+                            <h3>Monthly Sales Trends</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="salesTrendsChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">
+                            <h3>Category Distribution</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="categoryDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <!-- Recent Invoices -->
+                    <div class="card">
+                        <div class="card-title">
+                            <h3>Recent Transactions</h3>
+                            <button class="header-btn" onclick="app.switchTab('invoices')">View All</button>
+                        </div>
+                        <div class="data-table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Bill No.</th>
+                                        <th>Customer</th>
+                                        <th>Date</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-invoices-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Low Stock List -->
+                    <div class="card">
+                        <div class="card-title">
+                            <h3>Low Stock Alert</h3>
+                            <button class="header-btn" onclick="app.switchTab('inventory')">Manage Stock</button>
+                        </div>
+                        <div class="data-table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Stock Left</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="low-stock-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: BILLING POS -->
+            <section id="billing-tab" class="tab-content">
+                <div class="pos-grid">
+                    <!-- Cart Terminal -->
+                    <div class="card pos-billing-card">
+                        <div class="search-products-bar">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="billing-product-search" placeholder="Search product by Name, Category, or SKU Code..." autocomplete="off">
+                            <div id="billing-dropdown" class="autocomplete-dropdown"></div>
+                        </div>
+
+                        <div class="billing-table-wrapper">
+                            <table class="billing-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Price</th>
+                                        <th style="width: 110px;">Qty</th>
+                                        <th style="width: 90px;">Disc %</th>
+                                        <th style="width: 90px;">Tax %</th>
+                                        <th>Total</th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="billing-cart-body">
+                                    <!-- Dynamic items -->
+                                </tbody>
+                            </table>
+                            <div id="billing-empty-cart" style="text-align: center; padding: 50px 20px; color: var(--text-muted);">
+                                <i class="fa-solid fa-cart-shopping" style="font-size: 40px; margin-bottom: 12px; display: block; opacity: 0.5;"></i>
+                                Search and select products above to build invoice.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Checkout & Customer Details Panel -->
+                    <div class="pos-sidebar">
+                        
+                        <!-- Customer Profile -->
+                        <div class="customer-section">
+                            <h4 style="margin-bottom: 12px; font-weight: 600;"><i class="fa-solid fa-user-tag"></i> Customer Details</h4>
+                            <div class="form-group" style="position: relative;">
+                                <label for="billing-cust-phone">Mobile Phone</label>
+                                <input type="text" id="billing-cust-phone" placeholder="Enter Mobile Number" autocomplete="off">
+                                <div id="customer-dropdown" class="autocomplete-dropdown"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="billing-cust-name">Customer Name</label>
+                                <input type="text" id="billing-cust-name" placeholder="Walk-in Customer">
+                            </div>
+                            <div class="form-group">
+                                <label for="billing-cust-email">Email Address</label>
+                                <input type="email" id="billing-cust-email" placeholder="customer@email.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="billing-cust-gst">Customer GSTIN (Optional)</label>
+                                <input type="text" id="billing-cust-gst" placeholder="GSTIN number">
+                            </div>
+                        </div>
+
+                        <!-- Calculations Card -->
+                        <div class="card" style="padding: 20px;">
+                            <h4 style="font-weight: 600;"><i class="fa-solid fa-calculator"></i> Order Summary</h4>
+                            
+                            <div class="totals-summary">
+                                <div class="summary-row">
+                                    <span>Sub Total:</span>
+                                    <span id="pos-subtotal">₹0.00</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Tax Amount:</span>
+                                    <span id="pos-tax">₹0.00</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span>Discount Saved:</span>
+                                    <span id="pos-discount" style="color: var(--accent-success);">₹0.00</span>
+                                </div>
+                                <div class="summary-row total">
+                                    <span>Grand Total:</span>
+                                    <span id="pos-grandtotal">₹0.00</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-top: 14px;">
+                                <label>Payment Mode</label>
+                                <div class="payment-modes">
+                                    <button class="pay-mode-btn active" data-mode="UPI"><i class="fa-solid fa-mobile-screen"></i> UPI</button>
+                                    <button class="pay-mode-btn" data-mode="Card"><i class="fa-solid fa-credit-card"></i> Card</button>
+                                    <button class="pay-mode-btn" data-mode="Cash"><i class="fa-solid fa-money-bill-wave"></i> Cash</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="billing-remarks">Invoice Remarks / Notes</label>
+                                <input type="text" id="billing-remarks" placeholder="Optional comments...">
+                            </div>
+
+                            <button type="button" id="pos-checkout-btn" class="checkout-btn" style="width: 100%; margin-top: 12px;">
+                                <i class="fa-solid fa-receipt"></i> Generate & Print Invoice
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: PRODUCTS INVENTORY -->
+            <section id="inventory-tab" class="tab-content">
+                <div class="table-controls">
+                    <div class="search-input-group">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="product-search" placeholder="Search by SKU, Name, Category...">
+                    </div>
+                    <button class="header-btn primary" id="add-product-btn">
+                        <i class="fa-solid fa-plus"></i> Add Product
+                    </button>
+                </div>
+
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>SKU/Code</th>
+                                <th>Product Name</th>
+                                <th>Category</th>
+                                <th>Retail Price</th>
+                                <th>Cost Price</th>
+                                <th>Tax / GST</th>
+                                <th>In Stock</th>
+                                <th style="width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 4: CUSTOMERS CRM -->
+            <section id="customers-tab" class="tab-content">
+                <div class="table-controls">
+                    <div class="search-input-group">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="customer-search" placeholder="Search by Name, Phone, Email...">
+                    </div>
+                    <button class="header-btn primary" id="add-customer-btn">
+                        <i class="fa-solid fa-user-plus"></i> Add Customer
+                    </button>
+                </div>
+
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Mobile Phone</th>
+                                <th>Email Address</th>
+                                <th>Billing Address</th>
+                                <th>GSTIN</th>
+                                <th style="width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customer-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 5: INVOICES HISTORICAL LEDGER -->
+            <section id="invoices-tab" class="tab-content">
+                <div class="table-controls" style="gap: 12px;">
+                    <div class="search-input-group" style="max-width: 250px;">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="invoice-search" placeholder="Search by Bill No. or Customer...">
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 13px; color: var(--text-secondary);">From:</span>
+                        <input type="date" id="filter-date-from" class="table-input" style="width: 130px; height: 38px;">
+                        <span style="font-size: 13px; color: var(--text-secondary);">To:</span>
+                        <input type="date" id="filter-date-to" class="table-input" style="width: 130px; height: 38px;">
+                        
+                        <select id="filter-status" class="table-input" style="width: 110px; height: 38px; text-align: left;">
+                            <option value="">All Status</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                        
+                        <button class="header-btn" id="invoices-reset-filters"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+                    </div>
+                </div>
+
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Bill No.</th>
+                                <th>Date Issued</th>
+                                <th>Customer</th>
+                                <th>Subtotal</th>
+                                <th>Tax</th>
+                                <th>Grand Total</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                                <th style="width: 120px; text-align: center;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoice-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 6: SETTINGS -->
+            <section id="settings-tab" class="tab-content">
+                <div class="charts-grid" style="grid-template-columns: 1fr 1fr;">
+                    
+                    <!-- Store Profile Settings -->
+                    <div class="card">
+                        <div class="card-title">
+                            <h3><i class="fa-solid fa-shop"></i> Store Profile & Header</h3>
+                        </div>
+                        <form id="settings-store-form" style="display: flex; flex-direction: column; gap: 14px;">
+                            <div class="form-group">
+                                <label for="set-store-name">Store Name</label>
+                                <input type="text" id="set-store-name">
+                            </div>
+                            <div class="form-group">
+                                <label for="set-store-address">Store Address</label>
+                                <textarea id="set-store-address" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="set-store-phone">Contact Number</label>
+                                <input type="text" id="set-store-phone">
+                            </div>
+                            <div class="form-group">
+                                <label for="set-store-email">Email Address</label>
+                                <input type="email" id="set-store-email">
+                            </div>
+                            <div class="form-group">
+                                <label for="set-store-gst">Store GSTIN / Tax ID</label>
+                                <input type="text" id="set-store-gst">
+                            </div>
+                            <div class="form-group">
+                                <label for="set-store-currency">Currency Symbol</label>
+                                <input type="text" id="set-store-currency" style="max-width: 100px;">
+                            </div>
+                            <div class="form-group">
+                                <label for="set-store-terms">Invoice Terms & Conditions (Footer)</label>
+                                <textarea id="set-store-terms" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="checkout-btn" style="padding: 12px; margin-top: 10px;">
+                                <i class="fa-solid fa-floppy-disk"></i> Save Store Settings
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Security & Database Settings -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        
+                        <!-- Passcode Security -->
+                        <div class="card">
+                            <div class="card-title">
+                                <h3><i class="fa-solid fa-shield-halved"></i> Passcode Protection</h3>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 14px;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                    <input type="checkbox" id="set-auth-enabled" style="width: 20px; height: 20px; cursor: pointer;">
+                                    <label for="set-auth-enabled" style="font-weight: 500; cursor: pointer;">Require Passcode on Startup</label>
+                                </div>
+                                <div class="form-group" id="set-passcode-group" style="display: none;">
+                                    <label for="set-store-passcode">Store Passcode</label>
+                                    <input type="password" id="set-store-passcode" placeholder="Enter new passcode" maxlength="8">
+                                </div>
+                                <button type="button" id="save-security-btn" class="checkout-btn" style="padding: 12px; background: var(--accent-primary);">
+                                    <i class="fa-solid fa-lock-open"></i> Save Security settings
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Data Backup Operations -->
+                        <div class="card">
+                            <div class="card-title">
+                                <h3><i class="fa-solid fa-database"></i> Database Management</h3>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 14px;">
+                                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                                    Since everything is stored locally on your browser, you should back up your database files regularly.
+                                </p>
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button type="button" id="db-export-btn" class="header-btn" style="flex-grow: 1;">
+                                        <i class="fa-solid fa-file-export" style="color: var(--accent-primary);"></i> Export JSON Backup
+                                    </button>
+                                    <button type="button" id="db-trigger-import-btn" class="header-btn" style="flex-grow: 1;">
+                                        <i class="fa-solid fa-file-import" style="color: var(--accent-warning);"></i> Import Backup File
+                                    </button>
+                                    <input type="file" id="db-import-file" style="display: none;" accept=".json">
+                                </div>
+                                
+                                <div style="margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                                    <button type="button" id="db-reset-btn" class="checkout-btn" style="background: var(--accent-danger); width: 100%; font-size: 14px; padding: 12px;">
+                                        <i class="fa-solid fa-trash-arrow-up"></i> Reset Database (Seed Default Data)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS WRAPPER -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- MODAL 1: ADD/EDIT PRODUCT -->
+    <div id="product-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="product-modal-title">Add New Product</h3>
+                <button class="modal-close" id="product-modal-close">&times;</button>
+            </div>
+            <form id="product-form">
+                <input type="hidden" id="prod-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="prod-code">SKU Code / ID</label>
+                        <input type="text" id="prod-code" required placeholder="e.g. PROD009">
+                    </div>
+                    <div class="form-group">
+                        <label for="prod-name">Product Name</label>
+                        <input type="text" id="prod-name" required placeholder="e.g. Logitech Keyboard">
+                    </div>
+                    <div class="form-group">
+                        <label for="prod-category">Category</label>
+                        <input type="text" id="prod-category" placeholder="e.g. Electronics, Office">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label for="prod-price">Retail Selling Price (₹)</label>
+                            <input type="number" step="0.01" id="prod-price" required placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-cost">Cost Price (₹)</label>
+                            <input type="number" step="0.01" id="prod-cost" required placeholder="0.00">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label for="prod-tax">Tax Rate (%)</label>
+                            <input type="number" id="prod-tax" value="18" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-stock">Initial Stock Quantity</label>
+                            <input type="number" id="prod-stock" value="10" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="header-btn" id="product-modal-cancel">Cancel</button>
+                    <button type="submit" class="checkout-btn" style="padding: 10px 20px;">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ADD/EDIT CUSTOMER -->
+    <div id="customer-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="customer-modal-title">Add Customer</h3>
+                <button class="modal-close" id="customer-modal-close">&times;</button>
+            </div>
+            <form id="customer-form">
+                <input type="hidden" id="cust-id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="cust-name">Customer Name</label>
+                        <input type="text" id="cust-name" required placeholder="e.g. Ramesh Kumar">
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-phone">Mobile Number</label>
+                        <input type="text" id="cust-phone" required placeholder="10 digit number">
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-email">Email Address</label>
+                        <input type="email" id="cust-email" placeholder="e.g. ramesh@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-address">Billing Address</label>
+                        <textarea id="cust-address" rows="2" placeholder="Street, City, State"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="cust-gst">GSTIN (Optional)</label>
+                        <input type="text" id="cust-gst" placeholder="15-digit GSTIN">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="header-btn" id="customer-modal-cancel">Cancel</button>
+                    <button type="submit" class="checkout-btn" style="padding: 10px 20px;">Save Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: INVOICE VIEWER -->
+    <div id="invoice-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 750px;">
+            <div class="modal-header">
+                <h3>Invoice Details</h3>
+                <button class="modal-close" id="invoice-modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="invoice-modal-content">
+                <!-- Generated details injected here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="header-btn" id="invoice-modal-close-btn">Close</button>
+                <button type="button" class="header-btn" id="invoice-modal-pdf-btn" style="border-color: var(--accent-warning); color: var(--accent-warning);">
+                    <i class="fa-solid fa-file-pdf"></i> Download PDF
+                </button>
+                <button type="button" class="checkout-btn" id="invoice-modal-print-btn" style="padding: 10px 20px;">
+                    <i class="fa-solid fa-print"></i> Print Invoice
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: INVOICE STATUS EDITOR -->
+    <div id="status-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3>Change Invoice Status</h3>
+                <button class="modal-close" id="status-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="status-inv-id">
+                <div class="form-group">
+                    <label for="status-select">Payment Status</label>
+                    <select id="status-select">
+                        <option value="Paid">Paid</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="header-btn" id="status-modal-cancel">Cancel</button>
+                <button type="button" class="checkout-btn" id="status-modal-save" style="padding: 10px 20px;">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRINT SECTION (Isolated print preview block formatted for direct printer sending) -->
+    <div id="print-section">
+        <!-- Rendered dynamically by billing.js / invoices.js during trigger -->
+    </div>
+
+    <!-- Javascript Logic Modules -->
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+    <script src="dashboard.js"></script>
+    <script src="billing.js"></script>
+    <script src="inventory.js"></script>
+    <script src="customers.js"></script>
+    <script src="invoices.js"></script>
+    <script src="settings.js"></script>
+</body>
+</html>
