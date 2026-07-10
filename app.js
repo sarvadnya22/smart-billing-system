@@ -16,7 +16,6 @@ const app = {
 
         // 1. Check connection status with SQL Server
         await db.checkConnection();
-        app.updateConnectionBadge();
         
         // 2. Load configurations and events
         await app.checkAuthRequirement();
@@ -49,19 +48,6 @@ const app = {
         }
     },
 
-    // Update connection status badge in sidebar
-    updateConnectionBadge: () => {
-        const badge = document.getElementById('db-status-badge');
-        if (!badge) return;
-
-        if (db.isServerOnline) {
-            badge.className = 'db-status success';
-            badge.innerHTML = `<span class="status-dot"></span> SQL Server Connected`;
-        } else {
-            badge.className = 'db-status warning';
-            badge.innerHTML = `<span class="status-dot"></span> Offline (Local DB)`;
-        }
-    },
 
     // Attempt Login
     login: async (passcode) => {
