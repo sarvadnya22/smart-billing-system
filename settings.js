@@ -1,9 +1,9 @@
 // settings.js - Store Profile Config, Passcode Lock and DB Backup Controller
 
 const settingsModule = {
-    // Initialize form fields with DB data
-    init: () => {
-        const settings = db.getSettings();
+    // Initialize form fields with DB data (Asynchronous)
+    init: async () => {
+        const settings = await db.getSettings();
 
         // 1. Populate store profile form details
         document.getElementById('set-store-name').value = settings.storeName;
@@ -35,20 +35,20 @@ const settingsModule = {
         };
 
         // Form submits: Store Profile
-        document.getElementById('settings-store-form').onsubmit = (e) => {
+        document.getElementById('settings-store-form').onsubmit = async (e) => {
             e.preventDefault();
-            settingsModule.saveStoreDetails();
+            await settingsModule.saveStoreDetails();
         };
 
         // Button action: Save passcode lock
-        document.getElementById('save-security-btn').onclick = (e) => {
+        document.getElementById('save-security-btn').onclick = async (e) => {
             e.preventDefault();
-            settingsModule.saveSecurityDetails();
+            await settingsModule.saveSecurityDetails();
         };
 
         // Database backups: Export JSON
-        document.getElementById('db-export-btn').onclick = () => {
-            db.exportBackup();
+        document.getElementById('db-export-btn').onclick = async () => {
+            await db.exportBackup();
             app.showToast("Database backup downloaded!", "success");
         };
 
@@ -64,8 +64,8 @@ const settingsModule = {
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = (evt) => {
-                const result = db.importBackup(evt.target.result);
+            reader.onload = async (evt) => {
+                const result = await db.importBackup(evt.target.result);
                 if (result.success) {
                     app.showToast("Database restored successfully! Reloading...", "success");
                     setTimeout(() => {
@@ -79,9 +79,9 @@ const settingsModule = {
         };
 
         // Database backups: Reset database confirm triggers
-        document.getElementById('db-reset-btn').onclick = () => {
+        document.getElementById('db-reset-btn').onclick = async () => {
             if (confirm("WARNING: This will delete ALL transactions, products, and custom settings, and seed default mock items. Proceed?")) {
-                db.resetDatabase();
+                await db.resetDatabase();
                 app.showToast("Database reset successfully! Reloading...", "success");
                 setTimeout(() => {
                     window.location.reload();
@@ -91,8 +91,8 @@ const settingsModule = {
     },
 
     // Save profile metadata
-    saveStoreDetails: () => {
-        const settings = db.getSettings();
+    saveStoreDetails: async () => {
+        const settings = await db.getSettings();
         
         settings.storeName = document.getElementById('set-store-name').value.trim();
         settings.address = document.getElementById('set-store-address').value.trim();
@@ -102,14 +102,14 @@ const settingsModule = {
         settings.currency = document.getElementById('set-store-currency').value.trim();
         settings.terms = document.getElementById('set-store-terms').value.trim();
 
-        db.saveSettings(settings);
-        app.updateProfileDisplay();
+        await db.saveSettings(settings);
+        await app.updateProfileDisplay();
         app.showToast("Store profile saved!", "success");
     },
 
     // Save passcode protection settings
-    saveSecurityDetails: () => {
-        const settings = db.getSettings();
+    saveSecurityDetails: async () => {
+        const settings = await db.getSettings();
         const enabled = document.getElementById('set-auth-enabled').checked;
         const passcode = document.getElementById('set-store-passcode').value.trim();
 
@@ -121,8 +121,8 @@ const settingsModule = {
         settings.authEnabled = enabled;
         settings.passcode = passcode;
 
-        db.saveSettings(settings);
-        app.checkAuthRequirement();
+        await db.saveSettings(settings);
+        await app.checkAuthRequirement();
         app.showToast("Security configuration saved!", "success");
     }
 };

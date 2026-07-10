@@ -3,10 +3,10 @@
 const invoices = {
     selectedInvoice: null,
 
-    // Render historical invoices table with filters
-    render: () => {
-        const list = db.getInvoices();
-        const settings = db.getSettings();
+    // Render historical invoices table with filters (Asynchronous)
+    render: async () => {
+        const list = await db.getInvoices();
+        const settings = await db.getSettings();
         const searchVal = document.getElementById('invoice-search').value.toLowerCase().trim();
         const dateFrom = document.getElementById('filter-date-from').value;
         const dateTo = document.getElementById('filter-date-to').value;
@@ -26,7 +26,7 @@ const invoices = {
             const matchesStatus = !statusVal || inv.status === statusVal;
 
             // Date Range filter (inv.date is "YYYY-MM-DD HH:MM")
-            const invDateOnly = inv.date.split(' ')[0]; // Extract "YYYY-MM-DD"
+            const invDateOnly = inv.date.split(' ')[0];
             const matchesDateFrom = !dateFrom || invDateOnly >= dateFrom;
             const matchesDateTo = !dateTo || invDateOnly <= dateTo;
 
@@ -69,14 +69,14 @@ const invoices = {
         });
     },
 
-    // Populate Detailed Invoice Modal and open it
-    openInvoiceModal: (id) => {
-        const list = db.getInvoices();
+    // Populate Detailed Invoice Modal and open it (Asynchronous)
+    openInvoiceModal: async (id) => {
+        const list = await db.getInvoices();
         const inv = list.find(i => i.id === id);
         if (!inv) return;
 
         invoices.selectedInvoice = inv;
-        const settings = db.getSettings();
+        const settings = await db.getSettings();
         const contentBox = document.getElementById('invoice-modal-content');
 
         let rowsHTML = '';
@@ -95,10 +95,8 @@ const invoices = {
             `;
         });
 
-        // Set content HTML in glass style
         contentBox.innerHTML = `
             <div id="invoice-modal-print-area" style="padding: 10px; color: var(--text-primary);">
-                <!-- Invoice Store Header -->
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:16px; margin-bottom:16px;">
                     <div>
                         <h2 style="font-weight:700; color:white; font-size:22px;">${settings.storeName}</h2>
@@ -114,7 +112,6 @@ const invoices = {
                     </div>
                 </div>
 
-                <!-- Customer Info -->
                 <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:8px; padding:12px 16px; margin-bottom:20px; display:flex; justify-content:space-between;">
                     <div>
                         <span style="font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; block; margin-bottom:4px;">Billed To</span>
@@ -129,7 +126,6 @@ const invoices = {
                     </div>` : ''}
                 </div>
 
-                <!-- Items Grid Table -->
                 <table style="width:100%; border-collapse:collapse; text-align:left; margin-bottom:20px; font-size:14px;">
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border-color); color:var(--text-secondary); font-weight:600; font-size:12px; text-transform:uppercase;">
@@ -146,7 +142,6 @@ const invoices = {
                     </tbody>
                 </table>
 
-                <!-- Summary Row -->
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <div style="max-width:300px;">
                         ${inv.remarks ? `<p style="font-size:12px; color:var(--text-secondary);"><strong>Note:</strong> ${inv.remarks}</p>` : ''}
@@ -177,13 +172,13 @@ const invoices = {
     },
 
     // Trigger standard browser window print on selected invoice
-    printSelectedInvoice: () => {
+    printSelectedInvoice: async () => {
         if (invoices.selectedInvoice) {
-            billing.triggerInvoicePrint(invoices.selectedInvoice);
+            await billing.triggerInvoicePrint(invoices.selectedInvoice);
         }
     },
 
-    // Export selected invoice to PDF using html2pdf library
+    // Export selected invoice to PDF
     exportToPDF: () => {
         const inv = invoices.selectedInvoice;
         if (!inv) return;
@@ -191,13 +186,11 @@ const invoices = {
         app.showToast("Preparing PDF download...", "warning");
 
         const element = document.getElementById('invoice-modal-print-area');
-        
-        // Configuration for professional clean styling
         const options = {
             margin:       [10, 10, 10, 10],
             filename:     `invoice_${inv.id}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, backgroundColor: '#0f1624' }, // Keep native UI dark background or white? Dark looks high-tech
+            html2canvas:  { scale: 2, backgroundColor: '#0f1624' },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
@@ -215,24 +208,24 @@ const invoices = {
         document.getElementById('status-modal').classList.add('active');
     },
 
-    // Save payment status change
-    saveStatusChange: () => {
+    // Save payment status change (Asynchronous)
+    saveStatusChange: async () => {
         const id = document.getElementById('status-inv-id').value;
         const newStatus = document.getElementById('status-select').value;
 
-        db.updateInvoiceStatus(id, newStatus);
+        await db.updateInvoiceStatus(id, newStatus);
         app.showToast(`Invoice ${id} updated to ${newStatus}`, "success");
         
         document.getElementById('status-modal').classList.remove('active');
-        invoices.render();
+        await invoices.render();
     },
 
-    // Delete Invoice Record
-    deleteInvoiceItem: (id) => {
+    // Delete Invoice Record (Asynchronous)
+    deleteInvoiceItem: async (id) => {
         if (confirm(`CAUTION: Are you sure you want to permanently delete Invoice ${id}? This cannot be undone.`)) {
-            db.deleteInvoice(id);
+            await db.deleteInvoice(id);
             app.showToast(`Invoice ${id} deleted`, "warning");
-            invoices.render();
+            await invoices.render();
         }
     },
 
@@ -247,10 +240,10 @@ const invoices = {
 
     // Initialize module event listeners
     init: () => {
-        document.getElementById('invoice-search').addEventListener('input', invoices.render);
-        document.getElementById('filter-date-from').addEventListener('change', invoices.render);
-        document.getElementById('filter-date-to').addEventListener('change', invoices.render);
-        document.getElementById('filter-status').addEventListener('change', invoices.render);
+        document.getElementById('invoice-search').addEventListener('input', () => invoices.render());
+        document.getElementById('filter-date-from').addEventListener('change', () => invoices.render());
+        document.getElementById('filter-date-to').addEventListener('change', () => invoices.render());
+        document.getElementById('filter-status').addEventListener('change', () => invoices.render());
         document.getElementById('invoices-reset-filters').addEventListener('click', invoices.resetFilters);
 
         // Modal triggers close
@@ -261,8 +254,8 @@ const invoices = {
             document.getElementById('invoice-modal').classList.remove('active');
         });
         
-        // Print & PDF hooks inside modal
-        document.getElementById('invoice-modal-print-btn').addEventListener('click', invoices.printSelectedInvoice);
+        // Print & PDF hooks
+        document.getElementById('invoice-modal-print-btn').addEventListener('click', () => invoices.printSelectedInvoice());
         document.getElementById('invoice-modal-pdf-btn').addEventListener('click', invoices.exportToPDF);
 
         // Status Modal close
@@ -272,7 +265,7 @@ const invoices = {
         document.getElementById('status-modal-cancel').addEventListener('click', () => {
             document.getElementById('status-modal').classList.remove('active');
         });
-        document.getElementById('status-modal-save').addEventListener('click', invoices.saveStatusChange);
+        document.getElementById('status-modal-save').addEventListener('click', () => invoices.saveStatusChange());
     }
 };
 

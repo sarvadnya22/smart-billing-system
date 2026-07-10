@@ -4,19 +4,24 @@ const app = {
     currentTab: 'dashboard',
     isAuthenticated: false,
 
-    // Initialize application
-    init: () => {
-        app.checkAuthRequirement();
-        app.setupEventListeners();
-        app.updateProfileDisplay();
+    // Initialize application (Asynchronous)
+    init: async () => {
+        // 1. Check connection status with SQL Server
+        await db.checkConnection();
+        app.updateConnectionBadge();
         
-        // Initial tab load
-        app.switchTab(app.currentTab);
+        // 2. Load configurations and events
+        await app.checkAuthRequirement();
+        app.setupEventListeners();
+        await app.updateProfileDisplay();
+        
+        // 3. Initial tab load
+        await app.switchTab(app.currentTab);
     },
 
     // Handle Authentication Check
-    checkAuthRequirement: () => {
-        const settings = db.getSettings();
+    checkAuthRequirement: async () => {
+        const settings = await db.getSettings();
         const authScreen = document.getElementById('auth-screen');
         const logoutBtn = document.getElementById('header-logout-btn');
         
@@ -36,32 +41,46 @@ const app = {
         }
     },
 
+    // Update connection status badge in sidebar
+    updateConnectionBadge: () => {
+        const badge = document.getElementById('db-status-badge');
+        if (!badge) return;
+
+        if (db.isServerOnline) {
+            badge.className = 'db-status success';
+            badge.innerHTML = `<span class="status-dot"></span> SQL Server Connected`;
+        } else {
+            badge.className = 'db-status warning';
+            badge.innerHTML = `<span class="status-dot"></span> Offline (Local DB)`;
+        }
+    },
+
     // Attempt Login
-    login: (passcode) => {
-        const settings = db.getSettings();
+    login: async (passcode) => {
+        const settings = await db.getSettings();
         if (passcode === settings.passcode) {
             app.isAuthenticated = true;
             app.showToast("System unlocked successfully!", "success");
-            app.checkAuthRequirement();
-            app.switchTab('dashboard');
+            await app.checkAuthRequirement();
+            await app.switchTab('dashboard');
         } else {
             app.showToast("Incorrect passcode! Try again.", "error");
         }
     },
 
     // Bypass Authentication (Emergency Guest Access)
-    bypassAuth: () => {
+    bypassAuth: async () => {
         app.isAuthenticated = true;
         app.showToast("Access granted via Bypass mode", "warning");
-        app.checkAuthRequirement();
-        app.switchTab('dashboard');
+        await app.checkAuthRequirement();
+        await app.switchTab('dashboard');
     },
 
     // Log out / Lock screen
-    logout: () => {
+    logout: async () => {
         app.isAuthenticated = false;
         app.showToast("System locked", "warning");
-        app.checkAuthRequirement();
+        await app.checkAuthRequirement();
     },
 
     // Setup global navigation and action listeners
@@ -110,11 +129,11 @@ const app = {
     },
 
     // Switch between page views
-    switchTab: (tabId) => {
+    switchTab: async (tabId) => {
         // Verify login check
-        const settings = db.getSettings();
+        const settings = await db.getSettings();
         if (settings.authEnabled && !app.isAuthenticated) {
-            app.checkAuthRequirement();
+            await app.checkAuthRequirement();
             return;
         }
 
@@ -179,8 +198,8 @@ const app = {
     },
 
     // Refresh profile widgets
-    updateProfileDisplay: () => {
-        const settings = db.getSettings();
+    updateProfileDisplay: async () => {
+        const settings = await db.getSettings();
         document.getElementById('profile-store-name').textContent = settings.storeName;
     },
 

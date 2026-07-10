@@ -19,9 +19,9 @@ const billing = {
         const checkoutBtn = document.getElementById('pos-checkout-btn');
 
         // Product search autocomplete
-        prodSearch.addEventListener('input', (e) => {
+        prodSearch.addEventListener('input', async (e) => {
             const query = e.target.value.toLowerCase().trim();
-            billing.suggestProducts(query);
+            await billing.suggestProducts(query);
         });
 
         // Close dropdowns on clicking outside
@@ -35,9 +35,9 @@ const billing = {
         });
 
         // Customer autocomplete suggestions
-        custPhone.addEventListener('input', (e) => {
+        custPhone.addEventListener('input', async (e) => {
             const query = e.target.value.trim();
-            billing.suggestCustomers(query);
+            await billing.suggestCustomers(query);
         });
 
         // Payment mode selection toggling
@@ -52,14 +52,14 @@ const billing = {
         });
 
         // Main checkout generation handler
-        checkoutBtn.onclick = (e) => {
+        checkoutBtn.onclick = async (e) => {
             e.preventDefault();
-            billing.processCheckout();
+            await billing.processCheckout();
         };
     },
 
     // Search and display matches in product list
-    suggestProducts: (query) => {
+    suggestProducts: async (query) => {
         const dropdown = document.getElementById('billing-dropdown');
         dropdown.innerHTML = '';
 
@@ -68,7 +68,7 @@ const billing = {
             return;
         }
 
-        const products = db.getProducts();
+        const products = await db.getProducts();
         const matches = products.filter(p => 
             p.name.toLowerCase().includes(query) || 
             p.code.toLowerCase().includes(query) || 
@@ -101,7 +101,7 @@ const billing = {
     },
 
     // Suggest customer based on typed phone number
-    suggestCustomers: (query) => {
+    suggestCustomers: async (query) => {
         const dropdown = document.getElementById('customer-dropdown');
         dropdown.innerHTML = '';
 
@@ -110,7 +110,7 @@ const billing = {
             return;
         }
 
-        const customers = db.getCustomers();
+        const customers = await db.getCustomers();
         const matches = customers.filter(c => c.phone.includes(query) || c.name.toLowerCase().includes(query.toLowerCase()));
 
         if (matches.length === 0) {
@@ -215,7 +215,7 @@ const billing = {
     },
 
     // Recalculate totals and render grid elements
-    renderCart: () => {
+    renderCart: async () => {
         const tbody = document.getElementById('billing-cart-body');
         const emptyCart = document.getElementById('billing-empty-cart');
         tbody.innerHTML = '';
@@ -277,21 +277,21 @@ const billing = {
         });
 
         // Display totals summary
-        const settings = db.getSettings();
+        const settings = await db.getSettings();
         document.getElementById('pos-subtotal').textContent = settings.currency + subtotalAccumulator.toFixed(2);
         document.getElementById('pos-tax').textContent = settings.currency + taxAccumulator.toFixed(2);
         document.getElementById('pos-discount').textContent = settings.currency + discountAccumulator.toFixed(2);
         document.getElementById('pos-grandtotal').textContent = settings.currency + grandTotalAccumulator.toFixed(2);
     },
 
-    // Process Checkout and Save Invoice
-    processCheckout: () => {
+    // Process Checkout and Save Invoice (Asynchronous)
+    processCheckout: async () => {
         if (billing.cart.length === 0) {
             app.showToast("Cannot generate invoice for an empty cart!", "error");
             return;
         }
 
-        const settings = db.getSettings();
+        const settings = await db.getSettings();
         
         // Grab Customer credentials
         const phone = document.getElementById('billing-cust-phone').value.trim();
@@ -303,16 +303,16 @@ const billing = {
         // 1. CRM Check: If customer has mobile number, save/update customer in DB list
         let customerObj = { id: "", name, phone, email, gstin };
         if (phone) {
-            const customers = db.getCustomers();
+            const customers = await db.getCustomers();
             const existingCust = customers.find(c => c.phone === phone);
             if (existingCust) {
                 existingCust.name = name;
                 existingCust.email = email;
                 existingCust.gstin = gstin;
-                db.updateCustomer(existingCust);
+                await db.updateCustomer(existingCust);
                 customerObj.id = existingCust.id;
             } else {
-                const added = db.addCustomer({ name, phone, email, address: "", gstin });
+                const added = await db.addCustomer({ name, phone, email, address: "", gstin });
                 customerObj.id = added.id;
             }
         } else {
@@ -320,10 +320,9 @@ const billing = {
         }
 
         // 2. Generate unique Bill/Invoice Number (INV-1004, etc.)
-        const invoices = db.getInvoices();
+        const invoices = await db.getInvoices();
         let nextNumber = 1001;
         if (invoices.length > 0) {
-            // Get highest invoice number suffix
             const ids = invoices.map(inv => parseInt(inv.id.replace('INV-', '')) || 0);
             nextNumber = Math.max(...ids) + 1;
         }
@@ -335,7 +334,8 @@ const billing = {
         let discountAccumulator = 0;
         let grandTotalAccumulator = 0;
 
-        const finalItems = billing.cart.map(item => {
+        const finalItems = [];
+        for (const item of billing.cart) {
             const itemSubtotal = item.price * item.qty;
             const itemDiscount = itemSubtotal * (item.discountPercent / 100);
             const taxable = itemSubtotal - itemDiscount;
@@ -348,9 +348,9 @@ const billing = {
             grandTotalAccumulator += itemTotal;
 
             // 4. Update inventories
-            db.updateProductStock(item.id, item.qty);
+            await db.updateProductStock(item.id, item.qty);
 
-            return {
+            finalItems.push({
                 id: item.id,
                 name: item.name,
                 price: item.price,
@@ -360,8 +360,8 @@ const billing = {
                 subtotal: taxable,
                 tax: itemTax,
                 total: itemTotal
-            };
-        });
+            });
+        }
 
         // 5. Build final invoice object
         const today = new Date();
@@ -377,25 +377,25 @@ const billing = {
             discountTotal: discountAccumulator,
             grandTotal: grandTotalAccumulator,
             paymentMode: billing.selectedPaymentMode,
-            status: "Paid", // POS invoice is paid on checkout by default
+            status: "Paid",
             remarks: remarks
         };
 
-        // 6. Save Invoice to localStorage
-        db.addInvoice(newInvoice);
+        // 6. Save Invoice to database
+        await db.addInvoice(newInvoice);
 
         app.showToast(`Invoice ${invoiceId} generated successfully!`, "success");
 
         // 7. Render Printer layout structure
-        billing.triggerInvoicePrint(newInvoice);
+        await billing.triggerInvoicePrint(newInvoice);
 
         // 8. Reset Billing POS screen
         billing.clearCart();
     },
 
     // Prepare html structure inside the isolated print-section and fire standard window.print()
-    triggerInvoicePrint: (invoice) => {
-        const settings = db.getSettings();
+    triggerInvoicePrint: async (invoice) => {
+        const settings = await db.getSettings();
         const printBox = document.getElementById('print-section');
         
         let itemsRows = '';

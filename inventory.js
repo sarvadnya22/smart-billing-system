@@ -1,12 +1,12 @@
 // inventory.js - Products Catalog and Stock Management CRUD Controller
 
 const inventory = {
-    // Render and refresh table contents
-    render: () => {
-        const products = db.getProducts();
+    // Render and refresh table contents (Asynchronous)
+    render: async () => {
+        const products = await db.getProducts();
         const searchQuery = document.getElementById('product-search').value.toLowerCase().trim();
         const tbody = document.getElementById('product-table-body');
-        const settings = db.getSettings();
+        const settings = await db.getSettings();
         tbody.innerHTML = '';
 
         // Filter based on search criteria
@@ -50,13 +50,13 @@ const inventory = {
     },
 
     // Open Modal in Create mode
-    openAddModal: () => {
+    openAddModal: async () => {
         document.getElementById('product-modal-title').textContent = "Add New Product";
         document.getElementById('prod-id').value = '';
         document.getElementById('product-form').reset();
         
         // Auto-generate some code
-        const products = db.getProducts();
+        const products = await db.getProducts();
         const nextCodeNum = products.length + 1;
         document.getElementById('prod-code').value = `PROD` + nextCodeNum.toString().padStart(3, '0');
         
@@ -64,8 +64,8 @@ const inventory = {
     },
 
     // Open Modal in Edit mode
-    openEditModal: (id) => {
-        const products = db.getProducts();
+    openEditModal: async (id) => {
+        const products = await db.getProducts();
         const product = products.find(p => p.id === id);
 
         if (!product) return;
@@ -84,7 +84,7 @@ const inventory = {
     },
 
     // Save item details (Submit form)
-    saveProduct: (e) => {
+    saveProduct: async (e) => {
         e.preventDefault();
 
         const id = document.getElementById('prod-id').value;
@@ -101,31 +101,31 @@ const inventory = {
         if (id) {
             // Update mode
             productData.id = id;
-            db.updateProduct(productData);
+            await db.updateProduct(productData);
             app.showToast("Product details updated successfully!", "success");
         } else {
             // Create mode
-            db.addProduct(productData);
+            await db.addProduct(productData);
             app.showToast("New product cataloged successfully!", "success");
         }
 
         document.getElementById('product-modal').classList.remove('active');
-        inventory.render();
+        await inventory.render();
     },
 
     // Delete item
-    deleteItem: (id) => {
+    deleteItem: async (id) => {
         if (confirm("Are you sure you want to delete this product? All transaction history logs remain but product list will update.")) {
-            db.deleteProduct(id);
+            await db.deleteProduct(id);
             app.showToast("Product deleted successfully", "warning");
-            inventory.render();
+            await inventory.render();
         }
     },
 
     // Setup module event bindings
     init: () => {
-        document.getElementById('product-search').addEventListener('input', inventory.render);
-        document.getElementById('add-product-btn').addEventListener('click', inventory.openAddModal);
+        document.getElementById('product-search').addEventListener('input', () => inventory.render());
+        document.getElementById('add-product-btn').addEventListener('click', () => inventory.openAddModal());
         
         // Modal close hooks
         document.getElementById('product-modal-close').addEventListener('click', () => {
@@ -136,7 +136,7 @@ const inventory = {
         });
         
         // Form submit
-        document.getElementById('product-form').addEventListener('submit', inventory.saveProduct);
+        document.getElementById('product-form').addEventListener('submit', (e) => inventory.saveProduct(e));
     }
 };
 

@@ -1,16 +1,16 @@
-// db.js - LocalStorage Database Layer for Smart Billing System
+// db.js - Fail-safe Dual Mode Database Layer (SQL Backend + LocalStorage Fallback)
 
 const DB_PREFIX = "smart_billing_";
+const API_BASE = "http://localhost:3000/api";
 
 const KEYS = {
     PRODUCTS: DB_PREFIX + "products",
     INVOICES: DB_PREFIX + "invoices",
     CUSTOMERS: DB_PREFIX + "customers",
     SETTINGS: DB_PREFIX + "settings",
-    AUTH: DB_PREFIX + "auth"
 };
 
-// Default Store Profile settings
+// Default Store Profile settings fallback
 const DEFAULT_SETTINGS = {
     storeName: "Smart Mart & Electronics",
     address: "123, Dynamic Tech Park, Sector 62, Noida, UP, India",
@@ -19,196 +19,324 @@ const DEFAULT_SETTINGS = {
     gstin: "09AAAAA1111A1Z1",
     currency: "₹",
     terms: "Thank you for shopping with us! Goods once sold cannot be returned. Please check before leaving.",
-    authEnabled: false, // Login is disabled by default
+    authEnabled: false,
     passcode: "1234"
 };
 
-// Initial Seed Data for Products
-const MOCK_PRODUCTS = [
-    { id: "p1", code: "PROD001", name: "iPhone 15 Pro Max 256GB", category: "Electronics", price: 129999.00, cost: 110000.00, taxRate: 18, stock: 15 },
-    { id: "p2", code: "PROD002", name: "Samsung Galaxy S24 Ultra", category: "Electronics", price: 119999.00, cost: 98000.00, taxRate: 18, stock: 20 },
-    { id: "p3", code: "PROD003", name: "Sony WH-1000XM5 Headphones", category: "Accessories", price: 29999.00, cost: 24000.00, taxRate: 18, stock: 8 },
-    { id: "p4", code: "PROD004", name: "Dell XPS 13 Laptop", category: "Computers", price: 145000.00, cost: 125000.00, taxRate: 18, stock: 5 },
-    { id: "p5", code: "PROD005", name: "Apple Watch Series 9", category: "Wearables", price: 41999.00, cost: 35000.00, taxRate: 12, stock: 12 },
-    { id: "p6", code: "PROD006", name: "Logitech MX Master 3S", category: "Accessories", price: 9495.00, cost: 7500.00, taxRate: 18, stock: 45 },
-    { id: "p7", code: "PROD007", name: "SanDisk 1TB SSD Portable", category: "Accessories", price: 7999.00, cost: 6000.00, taxRate: 18, stock: 3 },
-    { id: "p8", code: "PROD008", name: "Mi Smart Air Purifier 4", category: "Appliances", price: 13999.00, cost: 11500.00, taxRate: 12, stock: 9 }
-];
-
-// Initial Seed Data for Customers
-const MOCK_CUSTOMERS = [
-    { id: "c1", name: "Rahul Sharma", phone: "9876543201", email: "rahul.sharma@example.com", address: "A-45, Green Park, New Delhi", gstin: "07AAAAA1234A1ZA" },
-    { id: "c2", name: "Priya Patel", phone: "9988776655", email: "priya.patel@example.com", address: "302, Royal Residency, Mumbai", gstin: "" },
-    { id: "c3", name: "Amit Verma", phone: "8877665544", email: "amit.verma@example.com", address: "Flat 12B, Regency Heights, Bangalore", gstin: "29BBBBB5678B1ZB" }
-];
-
-// Helper to seed standard data if localStorage is empty
-function initializeDB() {
-    if (!localStorage.getItem(KEYS.SETTINGS)) {
-        localStorage.setItem(KEYS.SETTINGS, JSON.stringify(DEFAULT_SETTINGS));
-    }
-    if (!localStorage.getItem(KEYS.PRODUCTS)) {
-        localStorage.setItem(KEYS.PRODUCTS, JSON.stringify(MOCK_PRODUCTS));
-    }
-    if (!localStorage.getItem(KEYS.CUSTOMERS)) {
-        localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(MOCK_CUSTOMERS));
-    }
-    if (!localStorage.getItem(KEYS.INVOICES)) {
-        // Create 3-4 default invoices to make dashboard look pretty on load
-        const today = new Date();
-        const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-        const dayBefore = new Date(today); dayBefore.setDate(today.getDate() - 2);
-        
-        const mockInvoices = [
-            {
-                id: "INV-1001",
-                date: dayBefore.toISOString().split('T')[0] + " 11:24",
-                customer: MOCK_CUSTOMERS[0],
-                items: [
-                    { id: "p1", name: "iPhone 15 Pro Max 256GB", price: 129999.00, qty: 1, discountPercent: 5, taxRate: 18, subtotal: 123499.05, tax: 22229.83, total: 145728.88 }
-                ],
-                subtotal: 123499.05,
-                taxTotal: 22229.83,
-                discountTotal: 6499.95,
-                grandTotal: 145728.88,
-                paymentMode: "UPI",
-                status: "Paid",
-                remarks: "Fast delivery requested"
-            },
-            {
-                id: "INV-1002",
-                date: yesterday.toISOString().split('T')[0] + " 15:42",
-                customer: MOCK_CUSTOMERS[1],
-                items: [
-                    { id: "p3", name: "Sony WH-1000XM5 Headphones", price: 29999.00, qty: 2, discountPercent: 10, taxRate: 18, subtotal: 53998.20, tax: 9719.68, total: 63717.88 },
-                    { id: "p6", name: "Logitech MX Master 3S", price: 9495.00, qty: 1, discountPercent: 0, taxRate: 18, subtotal: 9495.00, tax: 1709.10, total: 11204.10 }
-                ],
-                subtotal: 63493.20,
-                taxTotal: 11428.78,
-                discountTotal: 5999.80,
-                grandTotal: 74921.98,
-                paymentMode: "Card",
-                status: "Paid",
-                remarks: ""
-            },
-            {
-                id: "INV-1003",
-                date: today.toISOString().split('T')[0] + " 10:15",
-                customer: MOCK_CUSTOMERS[2],
-                items: [
-                    { id: "p5", name: "Apple Watch Series 9", price: 41999.00, qty: 1, discountPercent: 0, taxRate: 12, subtotal: 41999.00, tax: 5039.88, total: 47038.88 }
-                ],
-                subtotal: 41999.00,
-                taxTotal: 5039.88,
-                discountTotal: 0.00,
-                grandTotal: 47038.88,
-                paymentMode: "Cash",
-                status: "Pending",
-                remarks: "Will clear balance by evening"
-            }
-        ];
-        localStorage.setItem(KEYS.INVOICES, JSON.stringify(mockInvoices));
-    }
-}
-
-// Global DB access object
 const db = {
-    // PRODUCTS
-    getProducts: () => JSON.parse(localStorage.getItem(KEYS.PRODUCTS)) || [],
-    saveProducts: (products) => localStorage.setItem(KEYS.PRODUCTS, JSON.stringify(products)),
-    addProduct: (product) => {
-        const products = db.getProducts();
+    isServerOnline: false,
+
+    // Probe the backend server health check
+    checkConnection: async () => {
+        try {
+            // Set a quick 1.2-second timeout so it doesn't hang if offline
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1200);
+
+            const res = await fetch(`${API_BASE}/health`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (res.ok) {
+                db.isServerOnline = true;
+                console.log("SQL Backend Connected (API Mode active)");
+            } else {
+                db.isServerOnline = false;
+            }
+        } catch (e) {
+            db.isServerOnline = false;
+            console.warn("SQL Backend Offline. LocalStorage fallback mode active.");
+        }
+        return db.isServerOnline;
+    },
+
+    // Initialize LocalStorage structures as a backup seeder
+    initializeLocalDB: () => {
+        if (!localStorage.getItem(KEYS.SETTINGS)) {
+            localStorage.setItem(KEYS.SETTINGS, JSON.stringify(DEFAULT_SETTINGS));
+        }
+        if (!localStorage.getItem(KEYS.PRODUCTS)) {
+            const MOCK_PRODUCTS = [
+                { id: "p1", code: "PROD001", name: "iPhone 15 Pro Max 256GB", category: "Electronics", price: 129999.00, cost: 110000.00, taxRate: 18, stock: 15 },
+                { id: "p2", code: "PROD002", name: "Samsung Galaxy S24 Ultra", category: "Electronics", price: 119999.00, cost: 98000.00, taxRate: 18, stock: 20 },
+                { id: "p3", code: "PROD003", name: "Sony WH-1000XM5 Headphones", category: "Accessories", price: 29999.00, cost: 24000.00, taxRate: 18, stock: 8 },
+                { id: "p4", code: "PROD004", name: "Dell XPS 13 Laptop", category: "Computers", price: 145000.00, cost: 125000.00, taxRate: 18, stock: 5 }
+            ];
+            localStorage.setItem(KEYS.PRODUCTS, JSON.stringify(MOCK_PRODUCTS));
+        }
+        if (!localStorage.getItem(KEYS.CUSTOMERS)) {
+            const MOCK_CUSTOMERS = [
+                { id: "c1", name: "Rahul Sharma", phone: "9876543201", email: "rahul.sharma@example.com", address: "A-45, Green Park, New Delhi", gstin: "07AAAAA1234A1ZA" }
+            ];
+            localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(MOCK_CUSTOMERS));
+        }
+        if (!localStorage.getItem(KEYS.INVOICES)) {
+            localStorage.setItem(KEYS.INVOICES, JSON.stringify([]));
+        }
+    },
+
+    // ==========================================
+    // PRODUCTS CRUD (ASYNCHRONOUS)
+    // ==========================================
+    getProducts: async () => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/products`);
+                if (res.ok) return await res.json();
+            } catch(e) { db.isServerOnline = false; }
+        }
+        return JSON.parse(localStorage.getItem(KEYS.PRODUCTS)) || [];
+    },
+
+    saveProductsLocal: (products) => {
+        localStorage.setItem(KEYS.PRODUCTS, JSON.stringify(products));
+    },
+
+    addProduct: async (product) => {
         product.id = 'p_' + Date.now();
-        products.push(product);
-        db.saveProducts(products);
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(product)
+                });
+                if (res.ok) return product;
+            } catch(e) { db.isServerOnline = false; }
+        }
+        // Local Fallback
+        const list = await db.getProducts();
+        list.push(product);
+        db.saveProductsLocal(list);
         return product;
     },
-    updateProduct: (updatedProduct) => {
-        const products = db.getProducts();
-        const idx = products.findIndex(p => p.id === updatedProduct.id);
+
+    updateProduct: async (updatedProduct) => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/products`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedProduct)
+                });
+                if (res.ok) return true;
+            } catch(e) { db.isServerOnline = false; }
+        }
+        // Local Fallback
+        const list = await db.getProducts();
+        const idx = list.findIndex(p => p.id === updatedProduct.id);
         if (idx !== -1) {
-            products[idx] = updatedProduct;
-            db.saveProducts(products);
+            list[idx] = updatedProduct;
+            db.saveProductsLocal(list);
             return true;
         }
         return false;
     },
-    deleteProduct: (id) => {
-        const products = db.getProducts();
-        const filtered = products.filter(p => p.id !== id);
-        db.saveProducts(filtered);
+
+    deleteProduct: async (id) => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/products/${id}`, { method: 'DELETE' });
+                if (res.ok) return true;
+            } catch(e) { db.isServerOnline = false; }
+        }
+        // Local Fallback
+        const list = await db.getProducts();
+        const filtered = list.filter(p => p.id !== id);
+        db.saveProductsLocal(filtered);
+        return true;
     },
-    updateProductStock: (id, quantityToReduce) => {
-        const products = db.getProducts();
-        const product = products.find(p => p.id === id);
-        if (product) {
-            product.stock = Math.max(0, product.stock - quantityToReduce);
-            db.saveProducts(products);
+
+    updateProductStock: async (id, qtyToReduce) => {
+        // Fetch current product, update stock locally or on server
+        const list = await db.getProducts();
+        const prod = list.find(p => p.id === id);
+        if (prod) {
+            prod.stock = Math.max(0, prod.stock - qtyToReduce);
+            await db.updateProduct(prod);
         }
     },
 
-    // CUSTOMERS
-    getCustomers: () => JSON.parse(localStorage.getItem(KEYS.CUSTOMERS)) || [],
-    saveCustomers: (customers) => localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(customers)),
-    addCustomer: (customer) => {
-        const customers = db.getCustomers();
+    // ==========================================
+    // CUSTOMERS CRUD (ASYNCHRONOUS)
+    // ==========================================
+    getCustomers: async () => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/customers`);
+                if (res.ok) return await res.json();
+            } catch(e) { db.isServerOnline = false; }
+        }
+        return JSON.parse(localStorage.getItem(KEYS.CUSTOMERS)) || [];
+    },
+
+    saveCustomersLocal: (customers) => {
+        localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(customers));
+    },
+
+    addCustomer: async (customer) => {
         customer.id = 'c_' + Date.now();
-        customers.push(customer);
-        db.saveCustomers(customers);
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/customers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(customer)
+                });
+                if (res.ok) return customer;
+            } catch(e) { db.isServerOnline = false; }
+        }
+        // Local Fallback
+        const list = await db.getCustomers();
+        list.push(customer);
+        db.saveCustomersLocal(list);
         return customer;
     },
-    updateCustomer: (updatedCustomer) => {
-        const customers = db.getCustomers();
-        const idx = customers.findIndex(c => c.id === updatedCustomer.id);
+
+    updateCustomer: async (updatedCustomer) => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/customers`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedCustomer)
+                });
+                if (res.ok) return true;
+            } catch(e) { db.isServerOnline = false; }
+        }
+        // Local Fallback
+        const list = await db.getCustomers();
+        const idx = list.findIndex(c => c.id === updatedCustomer.id);
         if (idx !== -1) {
-            customers[idx] = updatedCustomer;
-            db.saveCustomers(customers);
+            list[idx] = updatedCustomer;
+            db.saveCustomersLocal(list);
             return true;
         }
         return false;
     },
-    deleteCustomer: (id) => {
-        const customers = db.getCustomers();
-        const filtered = customers.filter(c => c.id !== id);
-        db.saveCustomers(filtered);
+
+    deleteCustomer: async (id) => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/customers/${id}`, { method: 'DELETE' });
+                if (res.ok) return true;
+            } catch(e) { db.isServerOnline = false; }
+        }
+        // Local Fallback
+        const list = await db.getCustomers();
+        const filtered = list.filter(c => c.id !== id);
+        db.saveCustomersLocal(filtered);
+        return true;
     },
 
-    // INVOICES
-    getInvoices: () => JSON.parse(localStorage.getItem(KEYS.INVOICES)) || [],
-    saveInvoices: (invoices) => localStorage.setItem(KEYS.INVOICES, JSON.stringify(invoices)),
-    addInvoice: (invoice) => {
-        const invoices = db.getInvoices();
-        invoices.unshift(invoice); // Add new invoices to the top
-        db.saveInvoices(invoices);
+    // ==========================================
+    // INVOICES CRUD (ASYNCHRONOUS)
+    // ==========================================
+    getInvoices: async () => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/invoices`);
+                if (res.ok) return await res.json();
+            } catch(e) { db.isServerOnline = false; }
+        }
+        return JSON.parse(localStorage.getItem(KEYS.INVOICES)) || [];
+    },
+
+    saveInvoicesLocal: (invoices) => {
+        localStorage.setItem(KEYS.INVOICES, JSON.stringify(invoices));
+    },
+
+    addInvoice: async (invoice) => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/invoices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(invoice)
+                });
+                if (res.ok) return invoice;
+            } catch(e) { db.isServerOnline = false; }
+        }
+        // Local Fallback
+        const list = await db.getInvoices();
+        list.unshift(invoice);
+        db.saveInvoicesLocal(list);
         return invoice;
     },
-    updateInvoiceStatus: (id, status) => {
-        const invoices = db.getInvoices();
-        const idx = invoices.findIndex(inv => inv.id === id);
+
+    updateInvoiceStatus: async (id, status) => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/invoices/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                if (res.ok) return true;
+            } catch(e) { db.isServerOnline = false; }
+        }
+        // Local Fallback
+        const list = await db.getInvoices();
+        const idx = list.findIndex(inv => inv.id === id);
         if (idx !== -1) {
-            invoices[idx].status = status;
-            db.saveInvoices(invoices);
+            list[idx].status = status;
+            db.saveInvoicesLocal(list);
             return true;
         }
         return false;
     },
-    deleteInvoice: (id) => {
-        const invoices = db.getInvoices();
-        const filtered = invoices.filter(inv => inv.id !== id);
-        db.saveInvoices(filtered);
+
+    deleteInvoice: async (id) => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/invoices/${id}`, { method: 'DELETE' });
+                if (res.ok) return true;
+            } catch(e) { db.isServerOnline = false; }
+        }
+        // Local Fallback
+        const list = await db.getInvoices();
+        const filtered = list.filter(inv => inv.id !== id);
+        db.saveInvoicesLocal(filtered);
+        return true;
     },
 
-    // SETTINGS
-    getSettings: () => JSON.parse(localStorage.getItem(KEYS.SETTINGS)) || DEFAULT_SETTINGS,
-    saveSettings: (settings) => localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings)),
+    // ==========================================
+    // SETTINGS CRUD (ASYNCHRONOUS)
+    // ==========================================
+    getSettings: async () => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/settings`);
+                if (res.ok) return await res.json();
+            } catch(e) { db.isServerOnline = false; }
+        }
+        return JSON.parse(localStorage.getItem(KEYS.SETTINGS)) || DEFAULT_SETTINGS;
+    },
 
-    // UTILITIES
-    exportBackup: () => {
+    saveSettings: async (settings) => {
+        if (db.isServerOnline) {
+            try {
+                const res = await fetch(`${API_BASE}/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                if (res.ok) return true;
+            } catch(e) { db.isServerOnline = false; }
+        }
+        // Local Fallback
+        localStorage.setItem(KEYS.SETTINGS, JSON.stringify(settings));
+        return true;
+    },
+
+    // ==========================================
+    // BACKUP & RESET OPERATIONS
+    // ==========================================
+    exportBackup: async () => {
         const backupData = {
-            settings: db.getSettings(),
-            products: db.getProducts(),
-            customers: db.getCustomers(),
-            invoices: db.getInvoices(),
+            settings: await db.getSettings(),
+            products: await db.getProducts(),
+            customers: await db.getCustomers(),
+            invoices: await db.getInvoices(),
             exportedAt: new Date().toISOString()
         };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
@@ -219,14 +347,47 @@ const db = {
         downloadAnchor.click();
         downloadAnchor.remove();
     },
-    importBackup: (jsonContent) => {
+
+    importBackup: async (jsonContent) => {
         try {
             const data = JSON.parse(jsonContent);
             if (data.settings && data.products && data.customers && data.invoices) {
-                localStorage.setItem(KEYS.SETTINGS, JSON.stringify(data.settings));
-                localStorage.setItem(KEYS.PRODUCTS, JSON.stringify(data.products));
-                localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(data.customers));
-                localStorage.setItem(KEYS.INVOICES, JSON.stringify(data.invoices));
+                if (db.isServerOnline) {
+                    // Seed server database (for this demo, we reset tables first)
+                    // Then we populate products, customers, and invoices sequentially
+                    await fetch(`${API_BASE}/reset`, { method: 'POST' });
+                    await fetch(`${API_BASE}/settings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data.settings)
+                    });
+                    for (const p of data.products) {
+                        await fetch(`${API_BASE}/products`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(p)
+                        });
+                    }
+                    for (const c of data.customers) {
+                        await fetch(`${API_BASE}/customers`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(c)
+                        });
+                    }
+                    for (const inv of data.invoices) {
+                        await fetch(`${API_BASE}/invoices`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(inv)
+                        });
+                    }
+                } else {
+                    localStorage.setItem(KEYS.SETTINGS, JSON.stringify(data.settings));
+                    localStorage.setItem(KEYS.PRODUCTS, JSON.stringify(data.products));
+                    localStorage.setItem(KEYS.CUSTOMERS, JSON.stringify(data.customers));
+                    localStorage.setItem(KEYS.INVOICES, JSON.stringify(data.invoices));
+                }
                 return { success: true };
             }
             return { success: false, message: "Invalid backup file structure." };
@@ -234,12 +395,20 @@ const db = {
             return { success: false, message: e.message };
         }
     },
-    resetDatabase: () => {
+
+    resetDatabase: async () => {
+        if (db.isServerOnline) {
+            try {
+                await fetch(`${API_BASE}/reset`, { method: 'POST' });
+                return true;
+            } catch(e) { db.isServerOnline = false; }
+        }
         localStorage.clear();
-        initializeDB();
+        db.initializeLocalDB();
+        return true;
     }
 };
 
-// Run immediately to prepare database
-initializeDB();
-window.db = db; // Make global for other modules to import/access
+// Auto-run local backup preparation immediately
+db.initializeLocalDB();
+window.db = db;

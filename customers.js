@@ -1,9 +1,9 @@
 // customers.js - CRM Customer Ledger Directory Controller
 
 const customers = {
-    // Render and refresh customer table
-    render: () => {
-        const list = db.getCustomers();
+    // Render and refresh customer table (Asynchronous)
+    render: async () => {
+        const list = await db.getCustomers();
         const searchQuery = document.getElementById('customer-search').value.toLowerCase().trim();
         const tbody = document.getElementById('customer-table-body');
         tbody.innerHTML = '';
@@ -48,8 +48,8 @@ const customers = {
     },
 
     // Open Modal in Edit mode
-    openEditModal: (id) => {
-        const list = db.getCustomers();
+    openEditModal: async (id) => {
+        const list = await db.getCustomers();
         const cust = list.find(c => c.id === id);
 
         if (!cust) return;
@@ -66,7 +66,7 @@ const customers = {
     },
 
     // Save profile details (Submit form)
-    saveCustomer: (e) => {
+    saveCustomer: async (e) => {
         e.preventDefault();
 
         const id = document.getElementById('cust-id').value;
@@ -87,30 +87,30 @@ const customers = {
         if (id) {
             // Update
             customerData.id = id;
-            db.updateCustomer(customerData);
+            await db.updateCustomer(customerData);
             app.showToast("Customer profile updated!", "success");
         } else {
             // Create
-            db.addCustomer(customerData);
+            await db.addCustomer(customerData);
             app.showToast("Customer profile created!", "success");
         }
 
         document.getElementById('customer-modal').classList.remove('active');
-        customers.render();
+        await customers.render();
     },
 
     // Delete customer
-    deleteItem: (id) => {
+    deleteItem: async (id) => {
         if (confirm("Are you sure you want to delete this customer? Invoice reports remain but CRM listings will clear.")) {
-            db.deleteCustomer(id);
+            await db.deleteCustomer(id);
             app.showToast("Customer removed", "warning");
-            customers.render();
+            await customers.render();
         }
     },
 
     // Initialize listeners
     init: () => {
-        document.getElementById('customer-search').addEventListener('input', customers.render);
+        document.getElementById('customer-search').addEventListener('input', () => customers.render());
         document.getElementById('add-customer-btn').addEventListener('click', customers.openAddModal);
 
         // Modal triggers
@@ -122,7 +122,7 @@ const customers = {
         });
 
         // Form submit
-        document.getElementById('customer-form').addEventListener('submit', customers.saveCustomer);
+        document.getElementById('customer-form').addEventListener('submit', (e) => customers.saveCustomer(e));
     }
 };
 

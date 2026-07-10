@@ -4,20 +4,20 @@ const dashboard = {
     salesChart: null,
     categoryChart: null,
 
-    // Initialize Dashboard data and charts
-    init: () => {
-        dashboard.renderKPIs();
-        dashboard.renderRecentTransactions();
-        dashboard.renderLowStockAlerts();
-        dashboard.renderCharts();
+    // Initialize Dashboard data and charts (Asynchronous)
+    init: async () => {
+        await dashboard.renderKPIs();
+        await dashboard.renderRecentTransactions();
+        await dashboard.renderLowStockAlerts();
+        await dashboard.renderCharts();
     },
 
     // Calculate and render Key Performance Indicators
-    renderKPIs: () => {
-        const invoices = db.getInvoices();
-        const products = db.getProducts();
-        const customers = db.getCustomers();
-        const settings = db.getSettings();
+    renderKPIs: async () => {
+        const invoices = await db.getInvoices();
+        const products = await db.getProducts();
+        const customers = await db.getCustomers();
+        const settings = await db.getSettings();
 
         // 1. Today's Revenue (only count Paid & Pending invoices, exclude Cancelled)
         const todayStr = new Date().toISOString().split('T')[0];
@@ -25,7 +25,6 @@ const dashboard = {
         let todayInvoiceCount = 0;
 
         invoices.forEach(inv => {
-            // Invoice date format is "YYYY-MM-DD HH:MM"
             if (inv.date.startsWith(todayStr) && inv.status !== 'Cancelled') {
                 todayRevenue += inv.grandTotal;
                 todayInvoiceCount++;
@@ -43,9 +42,9 @@ const dashboard = {
     },
 
     // Render Recent 5 Invoices list
-    renderRecentTransactions: () => {
-        const invoices = db.getInvoices();
-        const settings = db.getSettings();
+    renderRecentTransactions: async () => {
+        const invoices = await db.getInvoices();
+        const settings = await db.getSettings();
         const tbody = document.getElementById('recent-invoices-body');
         tbody.innerHTML = '';
 
@@ -75,8 +74,8 @@ const dashboard = {
     },
 
     // Render Low Stock list panel
-    renderLowStockAlerts: () => {
-        const products = db.getProducts();
+    renderLowStockAlerts: async () => {
+        const products = await db.getProducts();
         const tbody = document.getElementById('low-stock-body');
         tbody.innerHTML = '';
 
@@ -100,9 +99,10 @@ const dashboard = {
     },
 
     // Render Charts
-    renderCharts: () => {
-        const invoices = db.getInvoices();
-        const products = db.getProducts();
+    renderCharts: async () => {
+        const invoices = await db.getInvoices();
+        const products = await db.getProducts();
+        const settings = await db.getSettings();
 
         // Destroy existing chart instances to avoid redraw bugs
         if (dashboard.salesChart) dashboard.salesChart.destroy();
@@ -122,8 +122,7 @@ const dashboard = {
         // Sum sales per month bin
         invoices.forEach(inv => {
             if (inv.status === 'Cancelled') return;
-            // Invoice date format "YYYY-MM-DD HH:MM"
-            const invDate = new Date(inv.date.replace(' ', 'T') + ':00'); // Convert to ISO parseable
+            const invDate = new Date(inv.date.replace(' ', 'T') + ':00');
             for (let i = 5; i >= 0; i--) {
                 const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
                 if (invDate.getMonth() === d.getMonth() && invDate.getFullYear() === d.getFullYear()) {
@@ -179,7 +178,6 @@ const dashboard = {
                         ticks: {
                             color: textColor,
                             callback: function(value) {
-                                const settings = db.getSettings();
                                 return settings.currency + value.toLocaleString();
                             }
                         }
@@ -190,8 +188,6 @@ const dashboard = {
 
         // Render Category Doughnut Chart
         const catCtx = document.getElementById('categoryDistributionChart').getContext('2d');
-        
-        // Color palette for category slices
         const chartColors = [
             'rgba(99, 102, 241, 0.7)',
             'rgba(16, 185, 129, 0.7)',
