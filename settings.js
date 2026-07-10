@@ -122,6 +122,9 @@ const settingsModule = {
         settings.passcode = passcode;
 
         await db.saveSettings(settings);
+        if (enabled) {
+            app.isAuthenticated = true; // Stay authenticated during the active configuration session
+        }
         await app.checkAuthRequirement();
         app.showToast("Security configuration saved!", "success");
     }

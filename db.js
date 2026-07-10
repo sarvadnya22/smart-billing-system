@@ -339,13 +339,16 @@ const db = {
             invoices: await db.getInvoices(),
             exportedAt: new Date().toISOString()
         };
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+        const json = JSON.stringify(backupData, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
         const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `billing_backup_${new Date().toISOString().slice(0,10)}.json`);
+        downloadAnchor.href = url;
+        downloadAnchor.download = `billing_backup_${new Date().toISOString().slice(0,10)}.json`;
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
-        downloadAnchor.remove();
+        document.body.removeChild(downloadAnchor);
+        URL.revokeObjectURL(url);
     },
 
     importBackup: async (jsonContent) => {
