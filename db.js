@@ -10,6 +10,18 @@ const KEYS = {
     SETTINGS: DB_PREFIX + "settings",
 };
 
+// Safe JSON parser helper to prevent page crashes on corrupted localStorage data
+function safeGetJSON(key, defaultValue) {
+    try {
+        const val = localStorage.getItem(key);
+        if (!val) return defaultValue;
+        return JSON.parse(val) || defaultValue;
+    } catch (e) {
+        console.error(`Error parsing localStorage key "${key}":`, e);
+        return defaultValue;
+    }
+}
+
 // Default Store Profile settings fallback
 const DEFAULT_SETTINGS = {
     storeName: "Smart Mart & Electronics",
@@ -84,7 +96,7 @@ const db = {
                 if (res.ok) return await res.json();
             } catch(e) { db.isServerOnline = false; }
         }
-        return JSON.parse(localStorage.getItem(KEYS.PRODUCTS)) || [];
+        return safeGetJSON(KEYS.PRODUCTS, []);
     },
 
     saveProductsLocal: (products) => {
@@ -166,7 +178,7 @@ const db = {
                 if (res.ok) return await res.json();
             } catch(e) { db.isServerOnline = false; }
         }
-        return JSON.parse(localStorage.getItem(KEYS.CUSTOMERS)) || [];
+        return safeGetJSON(KEYS.CUSTOMERS, []);
     },
 
     saveCustomersLocal: (customers) => {
@@ -238,7 +250,7 @@ const db = {
                 if (res.ok) return await res.json();
             } catch(e) { db.isServerOnline = false; }
         }
-        return JSON.parse(localStorage.getItem(KEYS.INVOICES)) || [];
+        return safeGetJSON(KEYS.INVOICES, []);
     },
 
     saveInvoicesLocal: (invoices) => {
@@ -309,7 +321,7 @@ const db = {
                 if (res.ok) return await res.json();
             } catch(e) { db.isServerOnline = false; }
         }
-        return JSON.parse(localStorage.getItem(KEYS.SETTINGS)) || DEFAULT_SETTINGS;
+        return safeGetJSON(KEYS.SETTINGS, DEFAULT_SETTINGS);
     },
 
     saveSettings: async (settings) => {
