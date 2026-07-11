@@ -186,17 +186,23 @@ const invoices = {
         app.showToast("Preparing PDF download...", "warning");
 
         const element = document.getElementById('invoice-modal-print-area');
+        
+        // Add temporary PDF layout class to override theme colors
+        element.classList.add('pdf-render-mode');
+
         const options = {
             margin:       [10, 10, 10, 10],
             filename:     `invoice_${inv.id}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, backgroundColor: '#0f1624' },
+            html2canvas:  { scale: 2, backgroundColor: '#ffffff' }, // Always white background for PDF
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         html2pdf().set(options).from(element).save().then(() => {
+            element.classList.remove('pdf-render-mode');
             app.showToast("PDF Invoice downloaded successfully!", "success");
         }).catch(err => {
+            element.classList.remove('pdf-render-mode');
             app.showToast("Error generating PDF: " + err.message, "error");
         });
     },

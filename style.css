@@ -1307,3 +1307,48 @@ body {
         gap: 12px;
     }
 }
+
+/* PDF Generation Override Styles (Always dark text on white paper background) */
+#invoice-modal-print-area.pdf-render-mode {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    padding: 30px !important;
+}
+
+#invoice-modal-print-area.pdf-render-mode * {
+    color: #0f172a !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+#invoice-modal-print-area.pdf-render-mode h2,
+#invoice-modal-print-area.pdf-render-mode h3,
+#invoice-modal-print-area.pdf-render-mode strong,
+#invoice-modal-print-area.pdf-render-mode .bold span {
+    color: #000000 !important;
+}
+
+#invoice-modal-print-area.pdf-render-mode div[style*="background:rgba"],
+#invoice-modal-print-area.pdf-render-mode div[style*="background: rgba"] {
+    background: #f8fafc !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+#invoice-modal-print-area.pdf-render-mode tr[style*="border-bottom"] {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+#invoice-modal-print-area.pdf-render-mode th {
+    border-bottom: 2px solid #0f172a !important;
+    color: #475569 !important;
+}
+
+#invoice-modal-print-area.pdf-render-mode span[style*="color:var(--accent-success)"],
+#invoice-modal-print-area.pdf-render-mode span[style*="color: var(--accent-success)"] {
+    color: #059669 !important; /* Force darker green for text contrast on white paper */
+}
+
+#invoice-modal-print-area.pdf-render-mode div[style*="font-size:18px"],
+#invoice-modal-print-area.pdf-render-mode div[style*="font-size: 18px"] {
+    color: #000000 !important;
+    border-top: 1px dashed rgba(0, 0, 0, 0.15) !important;
+}

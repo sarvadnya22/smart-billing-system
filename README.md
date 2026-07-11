@@ -5,7 +5,7 @@ A premium, modern, responsive, and feature-rich client-side Point of Sale (POS) 
 ---
 
 ## ✨ Features
-
+ 
 ### 1. 📊 Interactive Dashboard & Analytics
 - **Summary Metrics**: Live tracking of Today's Sales Revenue, Total Invoices Generated, Active Customers database, and Low Stock Warnings.
 - **Visual Charts**: Interactive **Monthly Sales Trends** (Bar chart) and **Product Category Distribution** (Doughnut chart) powered by **Chart.js**.
@@ -21,18 +21,7 @@ A premium, modern, responsive, and feature-rich client-side Point of Sale (POS) 
 - **Optimized Thermal Receipt Printing**: Clean `@media print` styles formatted specifically for standard thermal receipt printers.
 - **PDF Download Integration**: Download high-quality A4 layout invoice copies directly using `html2pdf.js`.
 
-### 4. 📦 Product Inventory & Customer CRM Directories
-- Full CRUD (Create, Read, Update, Delete) modals to manage product stock levels, costs, prices, tax categories, and customer profiles.
-
-### 5. 🔒 Lockout-Proof Passcode Access
-- Secure store access with passcode lock protection (disabled by default, customizable in Settings).
-- **Emergency Bypass (Guest Access)** to prevent password lockouts.
-
-### 6. 💾 Database Backup & Reset Tools
-- Export all custom products, customer details, and invoice logs into a single backup `.json` file.
-- Restore all data instantly on any device by importing a backup JSON file.
-- One-click "Reset Database" to clear configurations and reload default seed products for testing.
-
+# 
 ---
 
 ## 🎨 UI Design System & Aesthetics
